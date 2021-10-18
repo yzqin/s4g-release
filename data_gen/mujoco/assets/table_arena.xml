@@ -1,0 +1,22 @@
+<mujoco model="table_arena">
+  <compiler angle="radian" usethread="false"/>
+  <option collision="dynamic"/>
+  <asset>
+    <texture builtin="gradient" height="256" rgb1=".9 .9 1." rgb2=".2 .3 .4" type="skybox" width="256"/>
+  </asset>
+  <worldbody>
+    <geom condim="3" name="floor" pos="0 0 0" size="3 3 .125" type="plane"/>
+    <body name="table" pos="0 0 0.55">
+      <!--<geom pos="0 0 0" size="0.76 0.69 0.05" type="box" name="table_geom" friction="1 0.005 0.0001"/>-->
+      <geom pos="0 0 0" size="0.76 0.69 0.05" type="box" name="table_geom" friction="1 0.005 0.0001"
+            solimp="0.99 0.9999 0.001 0.1 6" solref="-60000 -1000"/>
+      <body pos="0 0 0" name="table_top"/>
+    </body>
+    <light diffuse=".8 .8 .8" dir="0 -.15 -1" directional="false" pos="0 0 4.0" specular="0.3 0.3 0.3"
+           castshadow="false"/>
+    <!--<light diffuse=".8 .8 .8" dir="0 -.15 -1" directional="false" pos="-3. -3. 4.0" specular="0.3 0.3 0.3" castshadow="false"/>-->
+    <camera mode="fixed" name="frontview" pos="1.6 0 1.45" quat="0.56 0.43 0.43 0.56"/>
+    <camera mode="fixed" name="birdview" pos="-0.2 0 3.0" quat="0.7071 0 0 0.7071"/>
+    <camera mode="fixed" name="agentview" pos="0.5 0 1.35" quat="0.653 0.271 0.271 0.653"/>
+  </worldbody>
+</mujoco>

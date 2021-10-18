@@ -1,0 +1,8 @@
+torch >= 1.8.0
+open3d >= 0.12.0
+numpy
+matplotlib
+opencv-python
+yacs
+tqdm
+path

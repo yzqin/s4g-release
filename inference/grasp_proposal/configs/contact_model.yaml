@@ -1,0 +1,40 @@
+DATA:
+  TYPE: "CONTACT"
+  NUM_WORKERS: 4
+  SCORE_CLASSES: 3
+  TRAIN:
+    ROOT_DIR: "/home/rayc/Desc_Root/data/yuzhe/contact_method/merged_data"
+  VAL:
+    ROOT_DIR: "/home/rayc/Desc_Root/data/yuzhe/contact_method/merged_data"
+  TEST:
+    ROOT_DIR: "data/ycb_data/eval_data"
+MODEL:
+  TYPE: "PN2"
+  PN2:
+    RADIUS: (0.02, 0.08, 0.32)
+    NUM_CENTROIDS: (5120, 1024, 256)
+    NUM_NEIGHBOURS: (64, 64, 64)
+    SA_CHANNELS: ((128, 128, 256), (256, 256, 512), (512, 512, 1024))
+    FP_CHANNELS: ((1024, 1024), (512, 512), (256, 256, 256))
+    NUM_FP_NEIGHBOURS: (3, 3, 3)
+    LABEL_SMOOTHING: 0.0
+    NEG_WEIGHT: 0.5
+    SEG_CHANNELS: (512, 256, 256, 128)
+SOLVER:
+  BASE_LR: 0.001
+SCHEDULER:
+  MAX_EPOCH: 205
+  TYPE: "StepLR"
+  StepLR:
+    step_size: 20
+    gamma: 0.5
+TRAIN:
+  BATCH_SIZE: 2
+  LOG_PERIOD: 5
+  FILE_LOG_PERIOD: 100
+  CHECKPOINT_PERIOD: 10
+TEST:
+  BATCH_SIZE: 1
+  LOG_PERIOD: 5
+  FILE_LOG_PERIOD: 100
+  WEIGHT: "/home/rayc/Projects/3DGPD/outputs/pn2_zhpipe/model_120.pth"

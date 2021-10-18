@@ -1,0 +1,36 @@
+<mujoco model="table_arena">
+  <worldbody>
+    <body name="toy_gripper" pos="0 0 2.5">
+      <body name="left_gripper" pos="0.04 0.05 0">
+        <geom type="box" size="0.04 0.01 0.015" rgba="0.9 0.9 0.9 0.9" friction="10 0.05 0.001" mass="1" contype="1"
+              conaffinity="1" solimp="0.99 0.9999 0.001 0.1 6" solref="-60000 -1000"/>
+        <joint type="slide" axis="0 -1 0" limited="true" range="0 0.04" name="left_finger_joint"/>
+        <site name="left_site" rgba="0 0 0 0"/>
+      </body>
+      <body name="right_gripper" pos="0.04 -0.05 0">
+        <geom type="box" size="0.04 0.01 0.015" rgba="0.9 0.9 0.9 0.9" friction="10 0.05 0.001" mass="1" contype="1"
+              conaffinity="1" solimp="0.99 0.9999 0.001 0.1 6" solref="-60000 -1000"/>
+        <joint type="slide" axis="0 1 0" limited="true" range="0 0.04" name="right_finger_joint"/>
+        <site name="right_site" rgba="0 0 0 0"/>
+      </body>
+      <body name="bottom_gripper" pos="-0.04 0 0">
+        <geom type="box" size="0.04 0.06 0.015" rgba="0.2 0.2 0.2 0.99" friction="5 0.01 0.001" mass="10" contype="1"
+              conaffinity="7"/>
+        <site name="bottom_site" rgba="0 0 0 0"/>
+      </body>
+      <joint type="free" name="gripper" damping="2"/>
+    </body>
+  </worldbody>
+  <actuator>
+    <general name="left_finger_motor" joint="left_finger_joint" ctrllimited="true" ctrlrange="-1 1"
+             gainprm="10 0 0 0 0 0 0 0 0 0"/>
+    <general name="right_finger_motor" joint="right_finger_joint" ctrllimited="true" ctrlrange="-1 1"
+             gainprm="10 0 0 0 0 0 0 0 0 0"/>
+    <general name="left_gravity" site="left_site" biastype="affine" biasprm="9.81 0 0 0 0 0 0 0 0 0"
+             gear="0 0 1 0 0 0"/>
+    <general name="right_gravity" site="right_site" biastype="affine" biasprm="9.81 0 0 0 0 0 0 0 0 0"
+             gear="0 0 1 0 0 0"/>
+    <general name="bottom_gravity" site="bottom_site" biastype="affine" biasprm="98.1 0 0 0 0 0 0 0 0 0"
+             gear="0 0 1 0 0 0"/>
+  </actuator>
+</mujoco>

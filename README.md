@@ -2,7 +2,6 @@
 
 [[Project Page]](https://sites.google.com/view/s4ggrapsing) [[Paper]](https://arxiv.org/abs/1910.14218) [[Video]](https://www.youtube.com/watch?v=Xlq4nw2AGcY)
 
------
 This repo contains code for S4G (CoRL 2019). 
 S4G is a grasping proposal algorithm to regress SE(3) pose from single camera 
 point cloud(depth only, no RGB information). 

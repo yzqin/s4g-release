@@ -7,75 +7,60 @@ import numpy as np
 import pickle
 import open3d
 from time import time
-from configs.dataset_config import NAME_LIST, NAME_TO_COLOR
-from configs.path import get_resource_dir_path
 from configs import config
 import torch
 from tqdm import trange
 import sklearn.metrics
 
-np.random.seed(1)
-
-single_object_data_path = get_resource_dir_path('contact_single_object_data')
-ply_dir = get_resource_dir_path('ply')
-npy_dir = get_resource_dir_path('npy')
-
 GASKET_RADIUS = 0.012
-COS_THR = 0.97
-DIST_THR = config.HALF_BOTTOM_SPACE * 2
-
-numpy_frame_move_back = np.eye(4)
-numpy_frame_move_back[0, 3] = -(config.FINGER_LENGTH - GASKET_RADIUS)
+COS_THR = 0.95
 THETA_SEARCH = list(range(0, 360, 30))
 THETA_NUM = len(THETA_SEARCH)
-numpy_local_search_to_local = np.tile(np.eye(4), (THETA_NUM, 1, 1))
-for i in range(THETA_NUM):
-    numpy_local_search_to_local[i, 0, 0] = np.cos(THETA_SEARCH[i] / 180 * np.pi)
-    numpy_local_search_to_local[i, 2, 2] = np.cos(THETA_SEARCH[i] / 180 * np.pi)
-    numpy_local_search_to_local[i, 0, 2] = np.sin(THETA_SEARCH[i] / 180 * np.pi)
-    numpy_local_search_to_local[i, 2, 0] = -np.sin(THETA_SEARCH[i] / 180 * np.pi)
-numpy_local_search_to_local = numpy_local_search_to_local @ numpy_frame_move_back
 
 
 class GenerateContactObjectData:
-    def __init__(self):
-        self.ply_dir = ply_dir
+    def __init__(self, model_dir, output_dir):
+        self.model_dir = model_dir
+        self.output_dir = output_dir
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.zeros_x_direction = torch.tensor([[0, 1, 0]], device=self.device).float()
+
+        # Common data pre-processing
+        numpy_frame_move_back = np.eye(4)
+        numpy_frame_move_back[0, 3] = -(config.FINGER_LENGTH - GASKET_RADIUS)
+        numpy_local_search_to_local = np.tile(np.eye(4), (THETA_NUM, 1, 1))
+        for i in range(THETA_NUM):
+            numpy_local_search_to_local[i, 0, 0] = np.cos(THETA_SEARCH[i] / 180 * np.pi)
+            numpy_local_search_to_local[i, 2, 2] = np.cos(THETA_SEARCH[i] / 180 * np.pi)
+            numpy_local_search_to_local[i, 0, 2] = np.sin(THETA_SEARCH[i] / 180 * np.pi)
+            numpy_local_search_to_local[i, 2, 0] = -np.sin(THETA_SEARCH[i] / 180 * np.pi)
+        numpy_local_search_to_local = numpy_local_search_to_local @ numpy_frame_move_back
         self.torch_local_search_to_local = torch.tensor(numpy_local_search_to_local, dtype=torch.float,
                                                         device=self.device)
         self.torch_local_to_local_search = torch.inverse(self.torch_local_search_to_local)
 
     def dump(self, data, name):
-        with open(os.path.join(single_object_data_path, '{}.p'.format(name)), 'wb') as f:
+        with open(os.path.join(self.output_dir, '{}.pkl'.format(name)), 'wb') as f:
             pickle.dump(data, f)
         print('Dump to file of {} with keys: {}'.format(name, data.keys()))
 
-    def run_loop(self, start, end=None):
-        if end:
-            todo = list(range(start, end))
-        else:
-            todo = list(range(start, len(NAME_LIST)))
-
-        todo_name_list = [NAME_LIST[i] for i in todo]
-
-        for _, name in enumerate(todo_name_list):
+    def run_loop(self, object_names):
+        for _, name in enumerate(object_names):
             print('Begin object {}'.format(name))
             tic = time()
             data_dict = {}
-            ply_path = os.path.join(self.ply_dir, "{}.ply".format(name))
-            pc = open3d.io.read_point_cloud(ply_path)
-            pc = pc.voxel_down_sample(0.0025)
+            ply_path = os.path.join(self.model_dir, "{}.obj".format(name))
+            mesh = open3d.io.read_triangle_mesh(ply_path)
+            mesh.compute_vertex_normals()
+            pc = mesh.sample_points_uniformly(np.asarray(mesh.vertices).shape[0] * 10)
+            pc = pc.voxel_down_sample(0.004)
 
-            color = NAME_TO_COLOR[name]
-            pc.paint_uniform_color(color)
             points = np.asarray(pc.points)
             normals = np.asarray(pc.normals)
             normals /= np.linalg.norm(normals, axis=1, keepdims=True)
             kd_tree = open3d.geometry.KDTreeFlann(pc)
-            normals = self.smooth_normal(normals, points, kd_tree)
+            # normals = self.smooth_normal(normals, points, kd_tree)
             pc.normals = open3d.utility.Vector3dVector(normals)
-            # open3d.visualization.draw_geometries([pc])
 
             data_dict.update({'cloud': points, 'normal': normals})
             valid_row, valid_column, all_antipodal_score = self.cache_contact_pair(points, normals)
@@ -120,9 +105,11 @@ class GenerateContactObjectData:
         within_distance_bool = dist < config.HALF_BOTTOM_SPACE * 2
         distance_vector = -points[:, np.newaxis, :] + points[np.newaxis, :, :]
         distance_vector /= np.clip(np.linalg.norm(distance_vector, axis=2, keepdims=True), 0.0001, 1)
+        print(distance_vector.shape)
         pairwise_cos = np.matmul(distance_vector, normals[:, :, np.newaxis]).squeeze(axis=2)
         cos_negative_bool = np.logical_and(pairwise_cos < 0, pairwise_cos.T < 0)
         average_cos = np.abs(pairwise_cos * pairwise_cos.T)
+        # average_cos = np.abs(pairwise_cos)
         within_cos_bool = average_cos > COS_THR
         within_bool = np.logical_and(within_cos_bool, within_distance_bool)
         # valid_bool = np.logical_and(within_bool, cos_negative_bool)
@@ -234,6 +221,15 @@ class GenerateContactObjectData:
         return
 
 
+def main():
+    model_dir = "../objects/mesh"
+    output_dir = "../objects/single_object_grasp"
+    os.makedirs(output_dir, exist_ok=True)
+    gen = GenerateContactObjectData(model_dir=model_dir, output_dir=output_dir)
+    object_names = ["camera"]
+    gen.run_loop(object_names)
+
+
 if __name__ == '__main__':
-    gen = GenerateContactObjectData()
-    gen.run_loop(71, 72)
+    np.random.seed(1)
+    main()

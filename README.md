@@ -2,16 +2,19 @@
 
 [[Project Page]](https://sites.google.com/view/s4ggrapsing) [[Paper]](https://arxiv.org/abs/1910.14218) [[Video]](https://www.youtube.com/watch?v=Xlq4nw2AGcY)
 
-This repo contains code for S4G (CoRL 2019). 
-S4G is a grasping proposal algorithm to regress SE(3) pose from single camera 
-point cloud(depth only, no RGB information). 
-S4G is trained **only** on synthetic dataset with [YCB Objects](http://ycb-benchmarks.s3-website-us-east-1.amazonaws.com/),
-it can generate to real world grasping with **unseen** objects that has never been used in the training. 
+This repo contains code for S4G (CoRL 2019).
+S4G is a grasping proposal algorithm to regress SE(3) pose from single camera
+point cloud(depth only, no RGB information).
+S4G is trained **only** on synthetic dataset
+with [YCB Objects](http://ycb-benchmarks.s3-website-us-east-1.amazonaws.com/),
+it can generate to real world grasping with **unseen** objects that has never been used in the training.
 
-It contains both `training data generation code` and `inference code` We also provide the `pretrained model` for fast trail with our S4G. 
+It contains both `training data generation code` and `inference code` We also provide the `pretrained model` for fast
+trail with our S4G.
 ![example result](docs/main.png)
 
 ## Installation
+
 1. Install the MuJoCo. It is recommended to use conda to manage python package:
 
 Install MuJoCo from: http://www.mujoco.org/ and put your MuJoCo licence to your install directory. If you already have
@@ -36,12 +39,16 @@ pip install -r requirements.txt # python >= 3.6
 `inference/grasp_proposal`: main entry
 
 4. Build PointNet CUDA Utils, need nvcc(CUDA compiler) >=10.0
+
 ```bash
 cd s4g-release/inference/grasp_proposal/network_models/models/pointnet2_utils
 python setup.py build_ext --inplace
 ```
 
-5. Try the minimal S4G with pretrained code:
+## Inference
+
+1. Try the minimal S4G with pretrained model:
+
 ```bash
 cd s4g-release/inference/grasp_proposal
 python grasp_proposal_test.py
@@ -53,13 +60,51 @@ the scene and the predicted grasp poses. Note that many tricks, e.g. NMS, are no
 You will see something like that if it all the setup work:
 ![example result](docs/test-example.png)
 
-6. More details on the grasp proposal (inference time):
-You can refer to [grasp_detector](inference/grasp_proposal/grasp_detector.py) for more details of how to 
-pre-process and post-process the data during inference.
+2. More details on the grasp proposal (inference time):
+   You can refer to [grasp_detector](inference/grasp_proposal/grasp_detector.py) for more details of how to
+   pre-process and post-process the data during inference.
 
-7. More details on training data and training
-Data generation contains several steps: 
-Random Scene Generation, Viewed Point Rendering, Scene(Complete) Point Generation, Grasp Pose Searching, Grasp Pose Post Processing
+## Data Generation
+
+1. Try the minimal S4G data generation:
+
+```bash
+cd s4g-release/data_gen
+export PYTHONPATH=`pwd`
+python data_generator/data_object_contact_point_generator.py # Generate object grasp pose
+python python3 post_process_single_grasp.py # Post process grasp pose
+```
+
+The code above will generate grasp pose in `s4g-release/objects/processed_single_object_grasp` as a pickle file for each
+object. You can tune the hyper-parameters for grasp proposal searching according to your object mesh model.
+
+2. Visualize the generated grasp
+
+```bash
+python3 visualize_single_grasp.py
+```
+
+The Open3D viewer will show you the object point cloud (no grasp will show in the first stage). Then click the point you
+desired with left mouse button inside the viewer while holding the **shift** key to select point you desired. You will
+observe something similar as follows:
+
+![example result](docs/select_point.png)
+
+Then press **q** on the keyboard to finish the point selection stage. A new viewer window will pop up show the grasp
+poses corresponding to the point selected.
+
+![example result](docs/grasp_viz.png)
+
+3. Then you can use the code to combine multiple single object grasp pose file into scene level grasp with the class in
+   the `data_gen/data_generator`.
+
+## More Details
+
+More details on training data and training:
+
+Data generation contains several steps:
+Random Scene Generation, Viewed Point Rendering, Scene(Complete) Point Generation, Grasp Pose Searching, Grasp Pose
+Post Processing
 For more details, you can refer to the directory of [data_gen](data_gen).
 
 ## Bibtex
@@ -76,8 +121,9 @@ For more details, you can refer to the directory of [data_gen](data_gen).
 ```
 
 ## Acknowledgement
+
 Some file in this repository is based on the wonderful projects
-from [GPD](https://github.com/atenpas/gpd) and [PointNet-GPD](https://github.com/lianghongzhuo/PointNetGPD). 
+from [GPD](https://github.com/atenpas/gpd) and [PointNet-GPD](https://github.com/lianghongzhuo/PointNetGPD).
 Thanks for authors of these projects to open source their code!
 
 
